@@ -104,6 +104,12 @@ fn generate(f: &mut dyn Write) {
 
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
+    // TODO: this is needed to find GMP on ARM MacOS, bc the `RUSTFLAGS` argument is ignored when there is a build script.
+    // Find a cross-platform solution.
+    println!("cargo::rustc-link-search=/opt/homebrew/Cellar/gmp/6.3.0/lib");
+
+    uniffi::generate_scaffolding("src/lib.udl").expect("uniffi generation failed");
+    
     let manifest_path = env::var("OUT_DIR").expect("cargo should have set this");
     let mut path = PathBuf::from(&manifest_path);
     path.push("constants.rs");
