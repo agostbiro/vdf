@@ -95,6 +95,8 @@ mod proof_of_time;
 mod proof_pietrzak;
 mod proof_wesolowski;
 
+uniffi::include_scaffolding!("lib");
+
 /// An empty struct indicating verification failure.
 ///
 /// For security reasons, the functions that perform verification *do not*
@@ -242,4 +244,14 @@ pub trait VDF: Send + Debug {
         difficulty: u64,
         alleged_solution: &[u8],
     ) -> Result<(), InvalidProof>;
+}
+
+pub fn wesolowski_solve(int_size_bits: u16, challenge: &[u8], difficulty: u64) -> Vec<u8> {
+    let vdf = WesolowskiVDFParams(int_size_bits).new();
+    vdf.solve(challenge, difficulty).expect("invalid difficulty")
+}
+
+pub fn wesolowski_verify(int_size_bits: u16, challenge: &[u8], difficulty: u64, alleged_solution: &[u8]) -> bool {
+    let vdf = WesolowskiVDFParams(int_size_bits).new();
+    vdf.verify(challenge, difficulty, alleged_solution).is_ok()
 }

@@ -16,6 +16,7 @@ use super::proof_of_time::{iterate_squarings, serialize};
 use classgroup::{gmp_classgroup::GmpClassGroup, BigNum, BigNumExt, ClassGroup};
 use sha2::{digest::FixedOutput, Digest, Sha256};
 use std::{cmp::Eq, collections::HashMap, hash::Hash, mem, u64, usize};
+use std::convert::TryInto;
 
 #[derive(Debug, Clone)]
 pub struct WesolowskiVDF {
@@ -109,7 +110,7 @@ fn u64_to_bytes(q: u64) -> [u8; 8] {
 /// Quote:
 ///
 /// > Creates a random prime based on input s.
-fn hash_prime<T: BigNum>(seed: &[&[u8]]) -> T {
+fn hash_prime<T: BigNum>(seed: &[&[u8]], t: u32) -> T {
     let mut j = 0u64;
     loop {
         let mut hasher = Sha256::new();
@@ -118,8 +119,9 @@ fn hash_prime<T: BigNum>(seed: &[&[u8]]) -> T {
         for i in seed {
             hasher.input(i);
         }
+        hasher.input(t.to_be_bytes());
         let n = T::from(&hasher.fixed_result()[..16]);
-        if n.probab_prime(2) {
+        if n.probab_prime(1) {
             break n;
         }
         j += 1;
@@ -225,7 +227,10 @@ where
     powers[&iterations]
         .serialize(&mut y_buf[..])
         .expect(super::INCORRECT_BUFFER_SIZE);
-    let b = hash_prime(&[&x_buf[..], &y_buf[..]]);
+    let b = hash_prime(
+        &[&x_buf[..], &y_buf[..]], 
+        iterations.try_into().expect("iterations fit into u32")
+    );
     eval_optimized(&x, &b, iterations as _, k, l, powers)
 }
 
@@ -244,7 +249,10 @@ pub fn verify_proof<T: BigNum, V: ClassGroup<BigNum = T>>(
     let mut y_buf = vec![0; element_len];
     y.serialize(&mut y_buf[..])
         .expect(super::INCORRECT_BUFFER_SIZE);
-    let b = hash_prime(&[&x_buf[..], &y_buf[..]]);
+    let b = hash_prime(
+        &[&x_buf[..], &y_buf[..]],
+        t.try_into().expect("iterations fit into u32")
+    );
     let mut r = T::from(0);
     r.mod_powm(&T::from(2u64), &T::from(t), &b);
     proof.pow(b);

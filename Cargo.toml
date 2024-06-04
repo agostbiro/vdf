@@ -20,7 +20,8 @@ members = [
 ]
 
 [profile.release]
-rpath = true
+# rpath = false is important to make Go bindings work
+rpath = false
 lto   = true
 debug = false
 # panic = 'abort'
