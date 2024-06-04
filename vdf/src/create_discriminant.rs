@@ -112,7 +112,7 @@ pub fn create_discriminant<T: BigNumExt>(seed: &[u8], length: u16) -> T {
             if !x {
                 let q = u64::from(M) * u64::from(i as u32);
                 n = n + q;
-                if n.probab_prime(2) {
+                if n.probab_prime(1) {
                     return -n;
                 }
                 n = n - q;
